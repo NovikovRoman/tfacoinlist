@@ -1,0 +1,41 @@
+post:
+  summary: Регистрация
+  description: Регистрация
+
+  requestBody:
+    content:
+      application/json:
+        schema:
+          oneOf:
+            - type: object
+              title: Изображение
+              properties:
+                qrCode:
+                  type: string
+                  description: Тело изображения в base64 (без `data:image/png;base64,`).
+            - type: object
+              title: Ссылка
+              properties:
+                qrCodeUrl:
+                  type: string
+                  description: Ссылка на qrcode.
+
+  responses:
+    200:
+      description: Успешно.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+                description: Ключ для получения кодов авторизации.
+                example: 876fa76e12b
+
+    400:
+      description: Ошибки при получении/обработке данных.
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/error.yaml"

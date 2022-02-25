@@ -1,0 +1,7 @@
+name: email
+in: path
+description: Email аккаунта.
+required: true
+schema:
+  type: string
+example: email@email.com

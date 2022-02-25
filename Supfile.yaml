@@ -1,0 +1,54 @@
+version: 0.5
+
+env:
+  PROJECT_DIR: tfacoinlist
+  FILENAME: tfacoinlist
+  OPENAPI_FILENAME: openapi.html
+  DIST_DIR: dist
+
+networks:
+  production:
+    hosts:
+      - icollect
+
+commands:
+  make:
+    desc: Сборка.
+    local: make build
+
+  createDir:
+    desc: Создание директории на сервере.
+    run: mkdir -p $HOME/$PROJECT_DIR
+
+  upload:
+    desc: Копирование готовой программы.
+    upload:
+      - src: ./$DIST_DIR/$FILENAME
+        dst: $HOME/$PROJECT_DIR
+      - src: ./$DIST_DIR/$OPENAPI_FILENAME
+        dst: $HOME/$PROJECT_DIR
+
+  restart:
+    desc: Установка символической ссылки.
+    run: >
+      ln -fs $HOME/$PROJECT_DIR/$DIST_DIR/$FILENAME $HOME/$PROJECT_DIR/$FILENAME
+      && ln -fs $HOME/$PROJECT_DIR/$DIST_DIR/$OPENAPI_FILENAME $HOME/$PROJECT_DIR/$OPENAPI_FILENAME
+      && cd $HOME/$PROJECT_DIR
+
+      curl 127.0.0.33:3333/service/stop/ 2> /dev/null;
+
+      while [ "$(ps -C ${FILENAME} -o pid= 2> /dev/null)" != "" ];
+      do
+        echo "Ожидание остановки сервиса.";
+        sleep 1;
+      done;
+
+      nohup ./$FILENAME >> $HOME/$PROJECT_DIR/nohup.out &
+      sleep 1
+
+targets:
+  deploy:
+    - make
+    - createDir
+    - upload
+    - restart

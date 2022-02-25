@@ -1,0 +1,7 @@
+name: key
+in: path
+description: Ключ, полученный при регистрации.
+required: true
+schema:
+  type: string
+example: 876fa76e12b

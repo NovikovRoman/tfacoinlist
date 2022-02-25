@@ -1,0 +1,27 @@
+get:
+  summary: Получить код авторизации.
+  description: Получить код авторизации.
+
+  parameters:
+    - $ref: "../paramPath/email.yaml"
+    - $ref: "../paramPath/key.yaml"
+
+  responses:
+    200:
+      description: Результат.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Код аутенфикации.
+                example: 231124
+
+    400:
+      description: Ошибки при получении/обработке данных.
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/error.yaml"

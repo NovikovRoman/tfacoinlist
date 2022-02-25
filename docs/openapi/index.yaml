@@ -1,0 +1,16 @@
+openapi: 3.0.2
+info:
+  title: TFA Coinlist
+  description: Сервис для получения кодов аутенфикации для coinlist.co
+  version: 0.0.1
+
+servers:
+  - url: "http://127.0.0.44:4444"
+    description: Адрес задается в .env. Локальный доступ.
+
+paths:
+  /registration/:
+    $ref: './paths/registration.yaml'
+
+  /auth/totp/{email}/{key}/:
+    $ref: './paths/auth.totp.yaml'
