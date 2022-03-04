@@ -24,10 +24,10 @@ sudo mv bin/sup /usr/bin
 
 ## Deploy
 
-В `~/.ssh/config` прописать доступы к серверам:
+В `~/.ssh/config` прописать доступы к серверу:
 
 ```shell
-Host servername
+Host icollect
     Hostname ipaddr
     User user
     Port 22
