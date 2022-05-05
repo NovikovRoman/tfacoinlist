@@ -43,6 +43,10 @@ func AuthCode(db *leveldb.DB) httprouter.Handle {
 			return
 		}
 
+		if err == leveldb.ErrNotFound {
+			rm.JsonError(http.StatusBadRequest, "user_not_found")
+		}
+
 		if ar = bytes.Split(value, []byte(":")); len(ar) != 2 {
 			log.WithFields(log.Fields{
 				"route":    "AuthCode",
