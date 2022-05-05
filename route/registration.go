@@ -2,7 +2,6 @@ package route
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
@@ -37,6 +36,7 @@ func Registration(db *leveldb.DB) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		var (
 			b    []byte
+			key  string
 			data registrationData
 			qr   qrCode
 			err  error
@@ -79,26 +79,16 @@ func Registration(db *leveldb.DB) httprouter.Handle {
 			return
 		}
 
-		h := sha1.New()
-		h.Write([]byte(qr.accountName + qr.secret))
-		key := fmt.Sprintf("%x", h.Sum(nil))
-
-		if err = db.Put([]byte(qr.accountName), []byte(qr.secret+":"+key), nil); err != nil {
+		if key, err = saveNewAccount(db, qr.accountName, qr.secret); err != nil {
 			log.WithFields(log.Fields{
-				"route":    "Registration",
-				"locality": "db.Put",
+				"route":    "ManualRegistration",
+				"locality": "saveNewAccount",
 			}).Error(err)
 			rm.JsonError(http.StatusBadRequest, "save_db")
 			return
 		}
 
-		resData := struct {
-			Key string `json:"key"`
-		}{
-			Key: key,
-		}
-
-		rm.Json(resData, http.StatusOK, nil)
+		sendAccountKey(rm, key)
 	}
 }
 

@@ -16,6 +16,8 @@ func NewRouting(db *leveldb.DB) *httprouter.Router {
 	router.GET(homePage, route.Homepage())
 	// Регистрация
 	router.POST("/registration/", route.Registration(db))
+	// Ручная регистрация
+	router.POST("/manual-registration/", route.ManualRegistration(db))
 
 	authRoutes(router, db)
 	return router
