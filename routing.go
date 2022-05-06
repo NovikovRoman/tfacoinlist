@@ -12,12 +12,15 @@ const (
 
 func NewRouting(db *leveldb.DB) *httprouter.Router {
 	router := httprouter.New()
+	// Страница для ручного добавления аккаунта
+	router.GET("/manual-registration/", route.ManualRegistrationGET())
+	// Ручная регистрация
+	router.POST("/manual-registration/", route.ManualRegistration(db))
+
 	// Статус сервера
 	router.GET(homePage, route.Homepage())
 	// Регистрация
 	router.POST("/registration/", route.Registration(db))
-	// Ручная регистрация
-	router.POST("/manual-registration/", route.ManualRegistration(db))
 
 	authRoutes(router, db)
 	return router

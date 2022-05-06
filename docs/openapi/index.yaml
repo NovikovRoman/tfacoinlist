@@ -11,8 +11,6 @@ servers:
 paths:
   /registration/:
     $ref: './paths/registration.yaml'
-  /manual-registration/:
-    $ref: './paths/manual-registration.yaml'
 
   /auth/totp/{email}/{key}/:
     $ref: './paths/auth.totp.yaml'

@@ -2,52 +2,61 @@ package route
 
 import (
 	"crypto/sha1"
-	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 	"net/http"
+	"net/url"
 	"tfacoinlist/response"
+	"time"
 )
 
-type manualRegistrationData struct {
-	Secret      string `json:"secret"`
-	AccountName string `json:"accountName"`
+func ManualRegistrationGET() httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		outPageManualRegistration(response.NewManager(w, r), "")
+	}
 }
 
 func ManualRegistration(db *leveldb.DB) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		var (
-			data manualRegistrationData
-			key  string
-			err  error
+			key    string
+			values url.Values
+			qr     qrCode
+			err    error
 		)
 
 		rm := response.NewManager(w, r)
 
 		var b []byte
-		if b, err = rm.ReadBody(); err != nil {
+		if b, err = rm.ReadBody(); err != nil || len(b) == 0 {
 			rm.JsonError(http.StatusInternalServerError, "io_read")
 			return
 		}
 
-		if err = json.Unmarshal(b, &data); err != nil {
+		if values, err = url.ParseQuery(string(b)); err != nil {
 			log.WithFields(log.Fields{
 				"route":    "ManualRegistration",
-				"locality": "json.Unmarshal",
-				"body":     string(b),
+				"locality": "ParseQuery",
+				"query":    string(b),
 			}).Error(err)
-			rm.JsonError(http.StatusBadRequest, "json_unmarshal")
+			rm.JsonError(http.StatusInternalServerError, "parse_url")
 			return
 		}
 
-		if data.Secret == "" || data.AccountName == "" {
-			rm.JsonError(http.StatusBadRequest, "bad_data", "Bad data.")
+		qrcodeUrl := values.Get("qrcodeUrl")
+		if qr, err = getQrCodeByUrl(qrcodeUrl); err != nil {
+			log.WithFields(log.Fields{
+				"route":    "ManualRegistration",
+				"locality": "getQrCodeByUrl",
+				"qrCode":   qrcodeUrl,
+			}).Error(err)
+			rm.JsonError(http.StatusBadRequest, "download_qrcode")
 			return
 		}
 
-		if key, err = saveNewAccount(db, data.AccountName, data.Secret); err != nil {
+		if key, err = saveNewAccount(db, qr.accountName, qr.secret); err != nil {
 			log.WithFields(log.Fields{
 				"route":    "ManualRegistration",
 				"locality": "saveNewAccount",
@@ -56,7 +65,8 @@ func ManualRegistration(db *leveldb.DB) httprouter.Handle {
 			return
 		}
 
-		sendAccountKey(rm, key)
+		header := fmt.Sprintf("<h4>Зарегистрирован.</h4><p>key: %s</p><hr>", key)
+		outPageManualRegistration(rm, header)
 	}
 }
 
@@ -77,4 +87,33 @@ func sendAccountKey(rm *response.Manager, key string) {
 	}
 
 	rm.Json(resData, http.StatusOK, nil)
+}
+
+func getQrCodeByUrl(qrcodeUrl string) (qr qrCode, err error) {
+	var b []byte
+	if b, err = downloadFile(qrcodeUrl, time.Second*30); err != nil {
+		return
+	}
+
+	qr, err = qrCodeFromByte(b)
+	return
+}
+
+func outPageManualRegistration(rm *response.Manager, header string) {
+	var err error
+
+	page := `<html><head></head><body>` + header + `<h4>Регистрация</h4><form method="post" style="width:300px;">
+<p><label for="inputAccount">Аккаунт (email)<br>
+<input id="inputAccount" type="text" name="accountName" style="width:100%;" /></p>
+<p><label for="inputQrcodeUrl">Ссылка на qrcode<br>
+<input id="inputQrcodeUrl" type="text" name="qrcodeUrl" style="width:100%;" /></label></p>
+<p><button type="submit">Отправить</button></p>
+</form></body></html>`
+
+	if _, err = rm.ResponseWriter.Write([]byte(page)); err != nil {
+		rm.ResponseWriter.WriteHeader(http.StatusInternalServerError)
+		log.WithFields(log.Fields{
+			"locality": "ManualRegistrationGET",
+		}).Error(err)
+	}
 }
