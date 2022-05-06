@@ -65,7 +65,10 @@ func ManualRegistration(db *leveldb.DB) httprouter.Handle {
 			return
 		}
 
-		header := fmt.Sprintf("<h4>Зарегистрирован.</h4><p>key: %s</p><hr>", key)
+		header := fmt.Sprintf(
+			`<h4>Зарегистрирован.</h4><p><a target="_blank" href="/auth/totp/%s/%s/">сгенерированный код</a> обновляется каждые 30 секунд</p><p>key: %s</p><hr>`,
+			qr.accountName, key, key,
+		)
 		outPageManualRegistration(rm, header)
 	}
 }
